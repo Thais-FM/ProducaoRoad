@@ -530,6 +530,12 @@ const supabaseClient = window.supabase.createClient(
       document.getElementById('pageTitle').textContent = pageInfo[idName][0];
       document.getElementById('pageSubtitle').textContent = pageInfo[idName][1];
       window.scrollTo({ top: 0, behavior: 'smooth' });
+
+      // Ao entrar em Briefings, seleciona automaticamente a primeira captação disponível.
+      if (idName === 'briefings' && !selectedCaptureId && data.captures.length) {
+        const firstPending = data.captures.find(c => c.briefingStatus !== 'completo') || data.captures[0];
+        openBriefing(firstPending.id);
+      }
     }
 
     function monthName(date) {
@@ -664,16 +670,25 @@ const supabaseClient = window.supabase.createClient(
     }
     function selectedCapture() { return data.captures.find(c => c.id === selectedCaptureId); }
     function addBriefLink() {
-      const link = val('linkInput'); if (!link || !selectedCapture()) return;
-      selectedCapture().links = selectedCapture().links || [];
-      selectedCapture().links.push({ id:id(), type:'link', title: link, url: link });
-      setVal('linkInput',''); saveAll(); renderBriefLinks();
+      const c = selectedCapture();
+      if (!c) { alert('Selecione uma captação na lateral antes de adicionar o link.'); return; }
+      const link = val('linkInput').trim();
+      if (!link) { alert('Cole um link antes de clicar em Adicionar link.'); return; }
+      c.links = c.links || [];
+      c.links.push({ id:id(), type:'link', title: link, url: link });
+      setVal('linkInput','');
+      saveAll();
+      renderBriefLinks();
     }
     function addBriefFiles(files) {
-      const c = selectedCapture(); if (!c || !files?.length) return;
+      const c = selectedCapture();
+      if (!c) { alert('Selecione uma captação na lateral antes de adicionar o anexo.'); return; }
+      if (!files || !files.length) return;
       c.links = c.links || [];
       [...files].forEach(file => c.links.push({ id:id(), type:'file', title:file.name, url:'' }));
-      document.getElementById('fileInput').value = ''; saveAll(); renderBriefLinks();
+      document.getElementById('fileInput').value = '';
+      saveAll();
+      renderBriefLinks();
     }
     function renderBriefLinks() {
       const c = selectedCapture(); const box = document.getElementById('briefLinks');
