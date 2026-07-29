@@ -147,7 +147,11 @@
     .checklist { display: grid; gap: 10px; }
     .check-item { display: flex; align-items: center; gap: 10px; padding: 12px; border-radius: 15px; background: var(--panel-soft); border: 1px solid var(--line); color: var(--text); }
     .stack { display: grid; gap: 12px; }
-    .audio-card, .file-card, .link-card { display: flex; align-items: center; justify-content: space-between; gap: 12px; border: 1px dashed var(--purple-mid); border-radius: 16px; padding: 13px; background: var(--purple-softer); color: var(--purple-dark); margin-bottom: 10px; }
+    .file-card, .link-card { display: flex; align-items: center; justify-content: space-between; gap: 12px; border: 1px dashed var(--purple-mid); border-radius: 16px; padding: 13px; background: var(--purple-softer); color: var(--purple-dark); margin-bottom: 10px; min-width: 0; }
+    .link-card > span { min-width: 0; flex: 1; overflow-wrap: anywhere; word-break: break-word; }
+    .link-card .actions { flex: 0 0 auto; }
+    .icon-delete { width: 30px; height: 30px; padding: 0; border-radius: 999px; font-size: 18px; line-height: 1; }
+    .brief-side-section + .brief-side-section { margin-top: 22px; padding-top: 18px; border-top: 1px solid var(--line); }
     .inline-add { display: grid; grid-template-columns: 1fr auto; gap: 8px; }
 
     .person-card, .client-card { display: grid; grid-template-columns: 92px 1fr; gap: 16px; align-items: start; }
@@ -325,36 +329,30 @@
             </div>
 
             <div style="height:18px"></div>
-            <div class="grid grid-2">
-              <div class="card" style="box-shadow:none">
-                <h3>Links e anexos</h3>
-                <div class="inline-add">
-                  <input class="field" id="linkInput" placeholder="Cole um link de PDF, galeria, Drive ou referência">
-                  <button class="btn btn-primary" onclick="addBriefLink()">Adicionar link</button>
-                </div>
-                <div style="height:10px"></div>
-                <input class="field" type="file" id="fileInput" multiple onchange="addBriefFiles(this.files)">
-                <div style="height:12px"></div>
-                <div id="briefLinks"></div>
+            <div class="card" style="box-shadow:none">
+              <h3>Links e anexos</h3>
+              <div class="inline-add">
+                <input class="field" id="linkInput" placeholder="Cole um link de PDF, galeria, Drive ou referência">
+                <button class="btn btn-primary" onclick="addBriefLink()">Adicionar link</button>
               </div>
-              <div class="card" style="box-shadow:none">
-                <h3>Áudios complementares</h3>
-                <div class="inline-add">
-                  <input class="field" id="audioLinkInput" placeholder="Cole um link de áudio ou WhatsApp/Drive">
-                  <button class="btn btn-primary" onclick="addAudioLink()">Adicionar áudio</button>
-                </div>
-                <div style="height:10px"></div>
-                <input class="field" type="file" id="audioFileInput" accept="audio/*" multiple onchange="addAudioFiles(this.files)">
-                <div style="height:12px"></div>
-                <div id="briefAudios"></div>
-              </div>
+              <div style="height:10px"></div>
+              <input class="field" type="file" id="fileInput" multiple onchange="addBriefFiles(this.files)">
+              <div style="height:12px"></div>
+              <div id="briefLinks"></div>
             </div>
           </div>
 
           <aside class="card">
-            <h3>Captações com briefing</h3>
-            <p class="meta">Clique para abrir e completar. As informações básicas já entram automaticamente quando o card nasce no calendário.</p>
-            <div class="mini-list" id="briefingList"></div>
+            <div class="brief-side-section">
+              <h3>Captações com briefing</h3>
+              <p class="meta">Aqui aparecem apenas os briefings pendentes ou incompletos.</p>
+              <div class="mini-list" id="briefingList"></div>
+            </div>
+            <div class="brief-side-section">
+              <h3>Briefings completos</h3>
+              <p class="meta">Os briefings marcados como completos ficam organizados aqui.</p>
+              <div class="mini-list" id="completedBriefingList"></div>
+            </div>
           </aside>
         </div>
       </section>
@@ -377,15 +375,10 @@
 
       <section id="flow" class="section">
         <div class="card">
-          <h3>Fluxo sugerido para todos os líderes para pedir captação da Road</h3>
-          <div class="timeline">
-            <div class="step"><div class="step-number">1</div><div><strong>Sinalize a data</strong><p>Mesmo sem confirmação final do cliente, marque como pré-reservado para a produção visualizar a demanda.</p></div></div>
-            <div class="step"><div class="step-number">2</div><div><strong>Cheque conflitos</strong><p>Antes de confirmar, veja se já existe captação no mesmo horário. Se houver conflito, alinhe diretamente com o outro líder.</p></div></div>
-            <div class="step"><div class="step-number">3</div><div><strong>Confirme com o cliente</strong><p>Valide horário, endereço, pessoa de contato, autorização de entrada e regras do local.</p></div></div>
-            <div class="step"><div class="step-number">4</div><div><strong>Preencha o briefing</strong><p>O briefing precisa ser objetivo, lista de takes, referências, anexos e áudios complementares quando necessário.</p></div></div>
-            <div class="step"><div class="step-number">5</div><div><strong>Avise o cliente</strong><p>O líder deve avisar sobre a ida do produtor de conteúdo e enviar nome, CPF, função e telefone ao cliente.</p></div></div>
-            <div class="step"><div class="step-number">6</div><div><strong>Use o WhatsApp para operação</strong><p>A comunicação com o produtor de conteúdo deve acontecer pelo WhatsApp para facilitar dúvidas rápidas, envio de material e encaminhamento ao cliente.</p></div></div>
+          <div class="toolbar">
+            <div><h3 id="flowTitle" contenteditable="true" onblur="updateFlowTitle(this.textContent)">Fluxo sugerido para todos os líderes para pedir captação da Road</h3><p class="meta" style="margin:6px 0 0">Clique em qualquer título ou texto para editar.</p></div>
           </div>
+          <div class="timeline" id="flowTimeline"></div>
         </div>
       </section>
 
@@ -454,7 +447,7 @@ const supabaseClient = window.supabase.createClient(
     const pageInfo = {
       overview: ['Visão geral', 'Tudo que a produção precisa ver antes do dia começar.'],
       calendar: ['Calendário', 'Agenda visual da produção, com pré-reserva, confirmação e alerta de conflito.'],
-      briefings: ['Briefings', 'O centro do fluxo: objetivo, takes, referências, anexos, áudios e observações.'],
+      briefings: ['Briefings', 'O centro do fluxo: objetivo, takes, referências, anexos e observações.'],
       leaders: ['Líderes', 'Cara-crachá dos responsáveis por cliente e produção.'],
       clients: ['Clientes & Drives', 'Biblioteca de clientes, líderes, últimos briefings e pastas.'],
       flow: ['Fluxo dos líderes', 'Passo a passo para solicitar captação sem virar novelo.'],
@@ -485,6 +478,15 @@ const supabaseClient = window.supabase.createClient(
           { id:id(), initials:'BM', logo:'', name:'Bio Mundo', leader:'Lucas Almeida', lastLocation:'Ipanema', next:'02/07, 10h', drive:'#', instagram:'', tiktok:'', briefing:'' },
           { id:id(), initials:'AZ', logo:'', name:'Arezzo', leader:'Bianca Rocha', lastLocation:'Rio Sul', next:'04/07, 16h', drive:'#', instagram:'', tiktok:'', briefing:'' }
         ],
+        flowTitle: 'Fluxo sugerido para todos os líderes para pedir captação da Road',
+        flow: [
+          { id:id(), title:'Sinalize a data', text:'Mesmo sem confirmação final do cliente, marque como pré-reservado para a produção visualizar a demanda.' },
+          { id:id(), title:'Cheque conflitos', text:'Antes de confirmar, veja se já existe captação no mesmo horário. Se houver conflito, alinhe diretamente com o outro líder.' },
+          { id:id(), title:'Confirme com o cliente', text:'Valide horário, endereço, pessoa de contato, autorização de entrada e regras do local.' },
+          { id:id(), title:'Preencha o briefing', text:'O briefing precisa ser objetivo, com lista de takes, referências e anexos quando necessário.' },
+          { id:id(), title:'Avise o cliente', text:'O líder deve avisar sobre a ida do produtor de conteúdo e enviar os dados necessários ao cliente.' },
+          { id:id(), title:'Use o WhatsApp para operação', text:'A comunicação com o produtor de conteúdo deve acontecer pelo WhatsApp para facilitar dúvidas rápidas, envio de material e encaminhamento ao cliente.' }
+        ],
         policy: [
           { id:id(), title:'Transporte em dias úteis', text:'Das 8h às 19h, priorizar transporte público, conforme política interna da Road.' },
           { id:id(), title:'Eventos após 19h', text:'A partir das 19h, o produtor de conteúdo tem direito a voucher de Uber para ida e volta, quando aplicável.' },
@@ -514,7 +516,10 @@ const supabaseClient = window.supabase.createClient(
       data.leaders = (data.leaders || []).map(l => ({ photo:'', cpf:'', whatsapp:'', phone:'', clients:'', role:'', initials:'', name:'', ...l }));
       data.clients = (data.clients || []).map(c => ({ logo:'', instagram:'', tiktok:'', drive:'#', briefing:'', next:'', lastLocation:'', leader:'', initials:'', name:'', ...c }));
       data.policy = data.policy || [];
-      data.captures = data.captures || [];
+      const defaults = defaultData();
+      data.flowTitle = data.flowTitle || defaults.flowTitle;
+      data.flow = data.flow || defaults.flow;
+      data.captures = (data.captures || []).map(c => ({ links:[], ...c }));
     }
 
     document.querySelectorAll('.nav button').forEach(btn => btn.addEventListener('click', () => showSection(btn.dataset.section)));
@@ -629,7 +634,7 @@ const supabaseClient = window.supabase.createClient(
       setVal('briefClient', c.client); setVal('briefLeader', c.leader); setVal('briefDate', c.date); setVal('briefTime', c.time); setVal('briefCaptureStatus', c.status); setVal('briefStatus', c.briefingStatus); setVal('briefAddress', c.address); setVal('briefObjective', c.objective || ''); setVal('briefTakes', c.takes || ''); setVal('briefRefs', c.refs || ''); setVal('briefObs', c.obs || '');
       document.getElementById('briefTitle').textContent = `Briefing | ${c.client}`;
       document.getElementById('briefMeta').textContent = `${formatDate(c.date)} · ${c.time || 'A confirmar'} · ${c.leader || 'Sem líder'}`;
-      renderBriefLinks(); renderBriefAudios(); renderBriefingList();
+      renderBriefLinks(); renderBriefingList();
       showSection('briefings');
     }
     function syncBriefBasic() {
@@ -648,9 +653,14 @@ const supabaseClient = window.supabase.createClient(
       if (showToast) alert('Briefing salvo.');
     }
     function renderBriefingList() {
-      const box = document.getElementById('briefingList');
+      const pendingBox = document.getElementById('briefingList');
+      const completedBox = document.getElementById('completedBriefingList');
       const sorted = [...data.captures].sort((a,b) => a.date.localeCompare(b.date));
-      box.innerHTML = sorted.map(c => `<div class="mini-item" onclick="openBriefing('${c.id}')" style="cursor:pointer"><div><strong>${escapeHtml(c.client)}</strong><br><span class="meta">${formatDate(c.date)} · ${escapeHtml(c.time)} · ${escapeHtml(c.leader)}</span></div><span class="status-pill pill-${c.briefingStatus}">${briefingStatusLabel(c.briefingStatus)}</span></div>`).join('');
+      const card = c => `<div class="mini-item" onclick="openBriefing('${c.id}')" style="cursor:pointer"><div><strong>${escapeHtml(c.client)}</strong><br><span class="meta">${formatDate(c.date)} · ${escapeHtml(c.time)} · ${escapeHtml(c.leader)}</span></div><span class="status-pill pill-${c.briefingStatus}">${briefingStatusLabel(c.briefingStatus)}</span></div>`;
+      const pending = sorted.filter(c => c.briefingStatus !== 'completo');
+      const completed = sorted.filter(c => c.briefingStatus === 'completo');
+      pendingBox.innerHTML = pending.length ? pending.map(card).join('') : '<p class="meta">Nenhum briefing pendente.</p>';
+      completedBox.innerHTML = completed.length ? completed.map(card).join('') : '<p class="meta">Nenhum briefing completo ainda.</p>';
     }
     function selectedCapture() { return data.captures.find(c => c.id === selectedCaptureId); }
     function addBriefLink() {
@@ -665,44 +675,27 @@ const supabaseClient = window.supabase.createClient(
       [...files].forEach(file => c.links.push({ id:id(), type:'file', title:file.name, url:'' }));
       document.getElementById('fileInput').value = ''; saveAll(); renderBriefLinks();
     }
-    function addAudioLink() {
-      const link = val('audioLinkInput'); if (!link || !selectedCapture()) return;
-      selectedCapture().audios = selectedCapture().audios || [];
-      selectedCapture().audios.push({ id:id(), type:'link', title: link, url: link });
-      setVal('audioLinkInput',''); saveAll(); renderBriefAudios();
-    }
-    function addAudioFiles(files) {
-      const c = selectedCapture(); if (!c || !files?.length) return;
-      c.audios = c.audios || [];
-      [...files].forEach(file => c.audios.push({ id:id(), type:'file', title:file.name, url:'' }));
-      document.getElementById('audioFileInput').value = ''; saveAll(); renderBriefAudios();
-    }
     function renderBriefLinks() {
       const c = selectedCapture(); const box = document.getElementById('briefLinks');
       if (!c) { box.innerHTML = '<p class="meta">Selecione uma captação.</p>'; return; }
-      box.innerHTML = (c.links || []).map(item => `<div class="link-card"><span>${item.type === 'file' ? 'Arquivo' : 'Link'}: ${escapeHtml(item.title)}</span><div class="actions" style="margin:0">${item.url ? `<a class="btn btn-ghost btn-small" href="${item.url}" target="_blank">Abrir</a>`:''}<button class="btn btn-danger btn-small" onclick="removeBriefItem('links','${item.id}')">Remover</button></div></div>`).join('') || '<p class="meta">Nenhum link ou anexo adicionado ainda.</p>';
+      box.innerHTML = (c.links || []).map(item => `<div class="link-card"><span>${item.type === 'file' ? 'Arquivo' : 'Link'}: ${escapeHtml(item.title)}</span><div class="actions" style="margin:0">${item.url ? `<a class="btn btn-ghost btn-small" href="${escapeHtmlAttr(item.url)}" target="_blank">Abrir</a>`:''}<button class="btn btn-danger btn-small icon-delete" title="Remover" aria-label="Remover" onclick="removeBriefItem('${item.id}')">×</button></div></div>`).join('') || '<p class="meta">Nenhum link ou anexo adicionado ainda.</p>';
     }
-    function renderBriefAudios() {
-      const c = selectedCapture(); const box = document.getElementById('briefAudios');
-      if (!c) { box.innerHTML = '<p class="meta">Selecione uma captação.</p>'; return; }
-      box.innerHTML = (c.audios || []).map(item => `<div class="audio-card"><span>${item.type === 'file' ? 'Áudio' : 'Link de áudio'}: ${escapeHtml(item.title)}</span><div class="actions" style="margin:0">${item.url ? `<a class="btn btn-ghost btn-small" href="${item.url}" target="_blank">Abrir</a>`:''}<button class="btn btn-danger btn-small" onclick="removeBriefItem('audios','${item.id}')">Remover</button></div></div>`).join('') || '<p class="meta">Nenhum áudio adicionado ainda.</p>';
-    }
-    function removeBriefItem(kind, itemId) {
+    function removeBriefItem(itemId) {
       const c = selectedCapture(); if (!c) return;
-      c[kind] = (c[kind] || []).filter(x => x.id !== itemId); saveAll(); renderBriefLinks(); renderBriefAudios();
+      c.links = (c.links || []).filter(x => x.id !== itemId); saveAll(); renderBriefLinks();
     }
 
     function renderLeaders() {
       const grid = document.getElementById('leadersGrid');
       grid.innerHTML = data.leaders.map(l => `<div class="card person-card" data-id="${l.id}">
         <div>
-          <div class="avatar">${l.photo ? `<img src="${l.photo}" alt="${escapeHtmlAttr(l.name)}">` : `<div class="avatar-fallback" contenteditable="true" onblur="updateLeader('${l.id}','initials',this.textContent)">${escapeHtml(l.initials)}</div>`}</div>
+          <div class="avatar">${l.photo ? `<img src="${l.photo}" alt="${escapeHtmlAttr(l.name)}">` : `<div class="avatar-fallback" aria-label="Sem foto">👤</div>`}</div>
           <input class="hidden-input" type="file" accept="image/*" id="leaderPhotoInput-${l.id}" onchange="handleLeaderPhoto('${l.id}', this.files)">
           <div class="actions" style="margin-top:10px"><button class="btn btn-ghost btn-small" onclick="triggerLeaderPhoto('${l.id}')">${l.photo ? 'Trocar foto' : 'Adicionar foto'}</button>${l.photo ? `<button class="btn btn-danger btn-small" onclick="removeLeaderPhoto('${l.id}')">Remover</button>` : ''}</div>
         </div>
         <div>
           <h3 contenteditable="true" onblur="updateLeader('${l.id}','name',this.textContent)">${escapeHtml(l.name)}</h3>
-          <div class="meta"><strong>Iniciais:</strong> <span contenteditable="true" onblur="updateLeader('${l.id}','initials',this.textContent)">${escapeHtml(l.initials)}</span><br><strong>Função:</strong> <span contenteditable="true" onblur="updateLeader('${l.id}','role',this.textContent)">${escapeHtml(l.role)}</span><br><strong>Clientes:</strong> <span contenteditable="true" onblur="updateLeader('${l.id}','clients',this.textContent)">${escapeHtml(l.clients)}</span><br><strong>Telefone:</strong> <span contenteditable="true" onblur="updateLeader('${l.id}','phone',this.textContent)">${escapeHtml(l.phone)}</span><br><strong>CPF:</strong> <span contenteditable="true" onblur="updateLeader('${l.id}','cpf',this.textContent)">${escapeHtml(l.cpf || '')}</span><br><strong>WhatsApp:</strong> <span contenteditable="true" onblur="updateLeader('${l.id}','whatsapp',this.textContent)">${escapeHtml(l.whatsapp || '')}</span></div>
+          <div class="meta"><strong>Função:</strong> <span contenteditable="true" onblur="updateLeader('${l.id}','role',this.textContent)">${escapeHtml(l.role)}</span><br><strong>Clientes:</strong> <span contenteditable="true" onblur="updateLeader('${l.id}','clients',this.textContent)">${escapeHtml(l.clients)}</span><br><strong>WhatsApp:</strong> <span contenteditable="true" onblur="updateLeader('${l.id}','whatsapp',this.textContent)">${escapeHtml(l.whatsapp || '')}</span></div>
           <div class="actions"><a class="btn btn-primary" href="https://wa.me/${escapeHtmlAttr((l.whatsapp || '').replace(/\D/g,''))}" target="_blank">WhatsApp</a><button class="btn btn-danger" onclick="removeLeader('${l.id}')">Excluir</button></div>
         </div>
       </div>`).join('');
@@ -711,7 +704,7 @@ const supabaseClient = window.supabase.createClient(
     function handleLeaderPhoto(idVal, files) { if (!files || !files[0]) return; fileToDataUrl(files[0], url => { const l = data.leaders.find(x => x.id === idVal); if (l) { l.photo = url; saveAll(); } }); }
     function removeLeaderPhoto(idVal) { const l = data.leaders.find(x => x.id === idVal); if (l) { l.photo = ''; saveAll(); } }
     function updateLeader(idVal, field, value) { const l = data.leaders.find(x => x.id === idVal); if (l) { l[field] = value.trim(); saveAll(); } }
-    function addLeader() { data.leaders.push({ id:id(), initials:'NL', photo:'', name:'Novo líder', role:'Líder de Social', clients:'Cliente', phone:'+55 ', whatsapp:'55', cpf:'' }); saveAll(); showSection('leaders'); }
+    function addLeader() { data.leaders.push({ id:id(), photo:'', name:'Novo líder', role:'Líder de Social', clients:'Cliente', whatsapp:'55' }); saveAll(); showSection('leaders'); }
     function removeLeader(idVal) { data.leaders = data.leaders.filter(l => l.id !== idVal); saveAll(); }
 
     function renderClients() {
@@ -741,6 +734,15 @@ const supabaseClient = window.supabase.createClient(
       const related = data.captures.filter(c => c.client === clientName).sort((a,b) => b.date.localeCompare(a.date));
       if (related[0]) openBriefing(related[0].id); else alert('Ainda não existe briefing cadastrado para este cliente.');
     }
+
+    function renderFlow() {
+      const title = document.getElementById('flowTitle');
+      const timeline = document.getElementById('flowTimeline');
+      if (title) title.textContent = data.flowTitle;
+      timeline.innerHTML = data.flow.map((step, index) => `<div class="step"><div class="step-number">${index + 1}</div><div><strong contenteditable="true" onblur="updateFlowStep('${step.id}','title',this.textContent)">${escapeHtml(step.title)}</strong><p contenteditable="true" onblur="updateFlowStep('${step.id}','text',this.textContent)">${escapeHtml(step.text)}</p></div></div>`).join('');
+    }
+    function updateFlowTitle(value) { data.flowTitle = value.trim() || 'Fluxo dos líderes'; saveAll(); }
+    function updateFlowStep(idVal, field, value) { const step = data.flow.find(x => x.id === idVal); if (step) { step[field] = value.trim(); saveAll(); } }
 
     function renderPolicy() {
       const grid = document.getElementById('policyGrid');
@@ -787,7 +789,7 @@ const supabaseClient = window.supabase.createClient(
     function escapeHtmlAttr(str='') { return escapeHtml(str).replace(/'/g, '&#39;'); }
     function escapeJs(str='') { return String(str).replace(/\\/g, '\\\\').replace(/'/g, "\\'"); }
 
-    function renderAll() { renderCalendar(); renderBriefingList(); renderLeaders(); renderClients(); renderPolicy(); renderHistory(); updateMetrics(); }
+    function renderAll() { renderCalendar(); renderBriefingList(); renderLeaders(); renderClients(); renderFlow(); renderPolicy(); renderHistory(); updateMetrics(); }
 
     document.getElementById('modalBackdrop').addEventListener('click', e => { if (e.target.id === 'modalBackdrop') closeCaptureModal(); });
     renderAll();
