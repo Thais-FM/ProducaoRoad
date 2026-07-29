@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Road Produção | Central de Captações</title>
@@ -435,6 +436,13 @@
   </div>
 
   <script>
+    const SUPABASE_URL = 'https://uunbjfjfnaotrabnddlz.supabase.co/rest/v1/';
+const SUPABASE_KEY = 'sb_publishable_-P_E4OgeBeRXzRSU1SP0tw_eKYMC_IX';
+
+const supabaseClient = window.supabase.createClient(
+  SUPABASE_URL,
+  SUPABASE_KEY
+);
     const STORAGE_KEY = 'roadProductionDashboardV3';
     const today = new Date(2026, 5, 30); // 30/06/2026, timezone do projeto
     const minMonth = new Date(2026, 6, 1); // Julho 2026
