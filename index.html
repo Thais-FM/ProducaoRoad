@@ -350,8 +350,13 @@
             </div>
             <div class="brief-side-section">
               <h3>Briefings completos</h3>
-              <p class="meta">Os briefings marcados como completos ficam organizados aqui.</p>
+              <p class="meta">Finalize a produção e clique em “Marcar como entregue”.</p>
               <div class="mini-list" id="completedBriefingList"></div>
+            </div>
+            <div class="brief-side-section">
+              <h3>Entregues</h3>
+              <p class="meta">Briefings já produzidos e entregues.</p>
+              <div class="mini-list" id="deliveredBriefingList"></div>
             </div>
           </aside>
         </div>
@@ -519,7 +524,7 @@ const supabaseClient = window.supabase.createClient(
       const defaults = defaultData();
       data.flowTitle = data.flowTitle || defaults.flowTitle;
       data.flow = data.flow || defaults.flow;
-      data.captures = (data.captures || []).map(c => ({ links:[], ...c }));
+      data.captures = (data.captures || []).map(c => ({ links:[], delivered:false, deliveredAt:'', ...c }));
     }
 
     document.querySelectorAll('.nav button').forEach(btn => btn.addEventListener('click', () => showSection(btn.dataset.section)));
@@ -661,12 +666,37 @@ const supabaseClient = window.supabase.createClient(
     function renderBriefingList() {
       const pendingBox = document.getElementById('briefingList');
       const completedBox = document.getElementById('completedBriefingList');
+      const deliveredBox = document.getElementById('deliveredBriefingList');
       const sorted = [...data.captures].sort((a,b) => a.date.localeCompare(b.date));
-      const card = c => `<div class="mini-item" onclick="openBriefing('${c.id}')" style="cursor:pointer"><div><strong>${escapeHtml(c.client)}</strong><br><span class="meta">${formatDate(c.date)} · ${escapeHtml(c.time)} · ${escapeHtml(c.leader)}</span></div><span class="status-pill pill-${c.briefingStatus}">${briefingStatusLabel(c.briefingStatus)}</span></div>`;
-      const pending = sorted.filter(c => c.briefingStatus !== 'completo');
-      const completed = sorted.filter(c => c.briefingStatus === 'completo');
-      pendingBox.innerHTML = pending.length ? pending.map(card).join('') : '<p class="meta">Nenhum briefing pendente.</p>';
-      completedBox.innerHTML = completed.length ? completed.map(card).join('') : '<p class="meta">Nenhum briefing completo ainda.</p>';
+
+      const baseInfo = c => `<div><strong>${escapeHtml(c.client)}</strong><br><span class="meta">${formatDate(c.date)} · ${escapeHtml(c.time)} · ${escapeHtml(c.leader)}</span></div>`;
+      const pendingCard = c => `<div class="mini-item" onclick="openBriefing('${c.id}')" style="cursor:pointer">${baseInfo(c)}<span class="status-pill pill-${c.briefingStatus}">${briefingStatusLabel(c.briefingStatus)}</span></div>`;
+      const completedCard = c => `<div class="mini-item mini-item-delivery" onclick="openBriefing('${c.id}')" style="cursor:pointer">${baseInfo(c)}<div class="delivery-actions"><span class="status-pill pill-completo">Completo</span><button class="btn btn-primary btn-small" onclick="event.stopPropagation(); markBriefingDelivered('${c.id}')">Marcar como entregue</button></div></div>`;
+      const deliveredCard = c => `<div class="mini-item mini-item-delivery" onclick="openBriefing('${c.id}')" style="cursor:pointer">${baseInfo(c)}<div class="delivery-actions"><span class="status-pill pill-completo">Entregue</span><button class="btn btn-ghost btn-small" onclick="event.stopPropagation(); undoBriefingDelivered('${c.id}')">Voltar para completos</button></div></div>`;
+
+      const pending = sorted.filter(c => c.briefingStatus !== 'completo' && !c.delivered);
+      const completed = sorted.filter(c => c.briefingStatus === 'completo' && !c.delivered);
+      const delivered = sorted.filter(c => c.delivered);
+      pendingBox.innerHTML = pending.length ? pending.map(pendingCard).join('') : '<p class="meta">Nenhum briefing pendente.</p>';
+      completedBox.innerHTML = completed.length ? completed.map(completedCard).join('') : '<p class="meta">Nenhum briefing completo aguardando entrega.</p>';
+      deliveredBox.innerHTML = delivered.length ? delivered.map(deliveredCard).join('') : '<p class="meta">Nenhum briefing entregue ainda.</p>';
+    }
+    function markBriefingDelivered(captureId) {
+      const c = data.captures.find(x => x.id === captureId);
+      if (!c) return;
+      if (!confirm(`Marcar o briefing de ${c.client} como entregue?`)) return;
+      c.delivered = true;
+      c.deliveredAt = new Date().toISOString();
+      saveAll(false);
+      renderBriefingList();
+    }
+    function undoBriefingDelivered(captureId) {
+      const c = data.captures.find(x => x.id === captureId);
+      if (!c) return;
+      c.delivered = false;
+      c.deliveredAt = '';
+      saveAll(false);
+      renderBriefingList();
     }
     function selectedCapture() { return data.captures.find(c => c.id === selectedCaptureId); }
     function addBriefLink() {
@@ -685,15 +715,54 @@ const supabaseClient = window.supabase.createClient(
       if (!c) { alert('Selecione uma captação na lateral antes de adicionar o anexo.'); return; }
       if (!files || !files.length) return;
       c.links = c.links || [];
-      [...files].forEach(file => c.links.push({ id:id(), type:'file', title:file.name, url:'' }));
-      document.getElementById('fileInput').value = '';
-      saveAll();
-      renderBriefLinks();
+      const selectedFiles = [...files];
+      const maxSize = 4 * 1024 * 1024;
+      const tooLarge = selectedFiles.filter(file => file.size > maxSize);
+      if (tooLarge.length) {
+        alert(`O arquivo “${tooLarge[0].name}” ultrapassa 4 MB. Use um link do Drive para arquivos maiores.`);
+        document.getElementById('fileInput').value = '';
+        return;
+      }
+      let remaining = selectedFiles.length;
+      selectedFiles.forEach(file => {
+        const reader = new FileReader();
+        reader.onload = e => {
+          c.links.push({ id:id(), type:'file', title:file.name, url:e.target.result, mimeType:file.type || 'application/octet-stream' });
+          remaining -= 1;
+          if (!remaining) {
+            document.getElementById('fileInput').value = '';
+            saveAll(false);
+            renderBriefLinks();
+          }
+        };
+        reader.onerror = () => {
+          remaining -= 1;
+          alert(`Não foi possível ler o arquivo “${file.name}”.`);
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+    function openBriefItem(itemId) {
+      const c = selectedCapture();
+      const item = (c?.links || []).find(x => x.id === itemId);
+      if (!item?.url) {
+        alert('Este anexo antigo não possui o arquivo salvo. Remova e adicione novamente para habilitar a abertura.');
+        return;
+      }
+      const opened = window.open(item.url, '_blank', 'noopener,noreferrer');
+      if (!opened && item.type === 'file') {
+        const a = document.createElement('a');
+        a.href = item.url;
+        a.download = item.title || 'anexo';
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+      }
     }
     function renderBriefLinks() {
       const c = selectedCapture(); const box = document.getElementById('briefLinks');
       if (!c) { box.innerHTML = '<p class="meta">Selecione uma captação.</p>'; return; }
-      box.innerHTML = (c.links || []).map(item => `<div class="link-card"><span>${item.type === 'file' ? 'Arquivo' : 'Link'}: ${escapeHtml(item.title)}</span><div class="actions" style="margin:0">${item.url ? `<a class="btn btn-ghost btn-small" href="${escapeHtmlAttr(item.url)}" target="_blank">Abrir</a>`:''}<button class="btn btn-danger btn-small icon-delete" title="Remover" aria-label="Remover" onclick="removeBriefItem('${item.id}')">×</button></div></div>`).join('') || '<p class="meta">Nenhum link ou anexo adicionado ainda.</p>';
+      box.innerHTML = (c.links || []).map(item => `<div class="link-card"><span>${item.type === 'file' ? 'Arquivo' : 'Link'}: ${escapeHtml(item.title)}</span><div class="actions" style="margin:0"><button class="btn btn-ghost btn-small" onclick="openBriefItem('${item.id}')">Abrir</button><button class="btn btn-danger btn-small icon-delete" title="Remover" aria-label="Remover" onclick="removeBriefItem('${item.id}')">×</button></div></div>`).join('') || '<p class="meta">Nenhum link ou anexo adicionado ainda.</p>';
     }
     function removeBriefItem(itemId) {
       const c = selectedCapture(); if (!c) return;
